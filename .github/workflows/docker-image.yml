@@ -1,0 +1,25 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker build -t ${{ secrets.IMAGE_NAME }} .
+      
+    - name: docker login
+      run: docker login -u qianfuxin -p '${{ secrets.DOCKER_TOKEN }}'
+    - name: change tag
+      run: docker tag ${{ secrets.IMAGE_NAME }}:latest qianfuxin/${{ secrets.IMAGE_NAME }}:latest
+    - name: push image
+      run: docker push qianfuxin/${{ secrets.IMAGE_NAME }}:latest
