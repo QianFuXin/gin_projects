@@ -1,8 +1,10 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	. "gin_projects/models"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
@@ -10,6 +12,8 @@ import (
 )
 
 var DB *gorm.DB
+var RDB *redis.Client
+var Ctx = context.Background()
 
 func InitDB() {
 	var err error
@@ -30,4 +34,20 @@ func InitDB() {
 	if err != nil {
 		log.Fatalf("failed to AutoMigrate database: %v", err)
 	}
+
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	RDB = redis.NewClient(&redis.Options{
+		Addr:     redisHost + ":" + redisPort,
+		Password: redisPassword,
+		DB:       0,
+	})
+	pong, err := RDB.Ping(Ctx).Result()
+	if err != nil {
+		log.Fatalf("Could not connect to Redis: %v", err)
+	}
+	log.Printf("Redis connected: %v", pong)
+
 }
