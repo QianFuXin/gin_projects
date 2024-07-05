@@ -7,7 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
+	"net/http"
 )
 
 func main() {
@@ -51,6 +54,38 @@ func main() {
 			return
 		}
 		c.JSON(200, gin.H{"value": value})
+	})
+	r.GET("/mongo-insert/:collection/:key/:value", func(c *gin.Context) {
+		collectionName := c.Param("collection")
+		key := c.Param("key")
+		value := c.Param("value")
+
+		collection := MongoDB.Collection(collectionName)
+		_, err := collection.InsertOne(Ctx, bson.M{key: value})
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"message": "document inserted"})
+	})
+
+	r.GET("/mongo-find/:collection/:key/:value", func(c *gin.Context) {
+		collectionName := c.Param("collection")
+		key := c.Param("key")
+		value := c.Param("value")
+
+		collection := MongoDB.Collection(collectionName)
+		var result bson.M
+		err := collection.FindOne(Ctx, bson.M{key: value}).Decode(&result)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				c.JSON(http.StatusNotFound, gin.H{"error": "document not found"})
+			} else {
+				c.JSON(500, gin.H{"error": err.Error()})
+			}
+			return
+		}
+		c.JSON(200, gin.H{"document": result})
 	})
 	err = r.Run()
 	if err != nil {

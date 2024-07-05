@@ -5,6 +5,8 @@ import (
 	"fmt"
 	. "gin_projects/models"
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"log"
@@ -13,6 +15,7 @@ import (
 
 var DB *gorm.DB
 var RDB *redis.Client
+var MongoDB *mongo.Database
 var Ctx = context.Background()
 
 func InitDB() {
@@ -49,5 +52,22 @@ func InitDB() {
 		log.Fatalf("Could not connect to Redis: %v", err)
 	}
 	log.Printf("Redis connected: %v", pong)
+	// Initialize MongoDB
+	mongoURI := os.Getenv("MONGO_URI")
+	mongoDatabase := os.Getenv("MONGO_DATABASE")
+
+	clientOptions := options.Client().ApplyURI(mongoURI)
+	client, err := mongo.Connect(Ctx, clientOptions)
+	if err != nil {
+		log.Fatalf("Could not connect to MongoDB: %v", err)
+	}
+
+	err = client.Ping(Ctx, nil)
+	if err != nil {
+		log.Fatalf("Could not ping MongoDB: %v", err)
+	}
+
+	MongoDB = client.Database(mongoDatabase)
+	log.Printf("MongoDB connected to database: %v", mongoDatabase)
 
 }
